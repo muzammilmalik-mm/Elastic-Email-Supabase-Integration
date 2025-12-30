@@ -1,0 +1,342 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+
+const HTML_CONTENT = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Elastic Email - OAuth Setup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { color: #333; font-size: 28px; margin-bottom: 10px; }
+        .logo p { color: #666; font-size: 14px; }
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .step-indicator { display: flex; justify-content: center; margin-bottom: 30px; gap: 10px; }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: background 0.3s;
+        }
+        .step-dot.active { background: #667eea; width: 30px; border-radius: 5px; }
+        h2 { color: #333; font-size: 22px; margin-bottom: 15px; text-align: center; }
+        p { color: #666; line-height: 1.6; margin-bottom: 20px; text-align: center; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; color: #333; font-weight: 500; margin-bottom: 8px; font-size: 14px; }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover { background: #f8f9ff; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .alert-error { background: #fee; color: #c33; border: 1px solid #fcc; }
+        .alert-success { background: #efe; color: #3c3; border: 1px solid #cfc; }
+        .alert-info { background: #eef; color: #33c; border: 1px solid #ccf; }
+        .loading { text-align: center; padding: 20px; }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .success-icon { text-align: center; font-size: 64px; margin-bottom: 20px; }
+        .credential-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .credential-box strong { color: #333; display: block; margin-bottom: 5px; }
+        .credential-box span { color: #666; font-family: monospace; }
+        .link { color: #667eea; text-decoration: none; font-weight: 500; }
+        .link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>📧 Elastic Email Setup</h1>
+            <p>Connect your Elastic Email account to Supabase</p>
+        </div>
+        <div class="step-indicator">
+            <div class="step-dot active" data-step="1"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-dot" data-step="3"></div>
+        </div>
+        <div id="step1" class="step active">
+            <h2>Get Your Elastic Email API Key</h2>
+            <p>To continue, you'll need an Elastic Email API key.</p>
+            <div class="alert alert-info">
+                <strong>How to get your API key:</strong><br>
+                1. Log in to <a href="https://elasticemail.com/account#/settings/new/manage-api" target="_blank" class="link">Elastic Email</a><br>
+                2. Go to Settings → Manage API<br>
+                3. Create a new API key<br>
+                4. Copy and paste it below
+            </div>
+            <div class="input-group">
+                <label for="apiKey">Elastic Email API Key</label>
+                <input type="text" id="apiKey" placeholder="Enter your Elastic Email API key">
+            </div>
+            <button class="btn" onclick="validateApiKey()">Continue</button>
+        </div>
+        <div id="step2" class="step">
+            <h2>Authorize Access</h2>
+            <p>Click the button below to authorize this application to manage your SMTP settings.</p>
+            <div id="authInfo" class="credential-box" style="display: none;">
+                <strong>Account Email:</strong>
+                <span id="accountEmail">-</span>
+            </div>
+            <button class="btn" onclick="startOAuthFlow()">Authorize with OAuth</button>
+            <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+        </div>
+        <div id="step3" class="step">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p id="loadingMessage">Processing...</p>
+            </div>
+        </div>
+        <div id="step4" class="step">
+            <div class="success-icon">✅</div>
+            <h2>All Set!</h2>
+            <p>Your Elastic Email account has been connected successfully.</p>
+            <div class="credential-box">
+                <strong>Default Sender Email:</strong>
+                <span id="senderEmail">-</span>
+            </div>
+            <div class="credential-box">
+                <strong>Default Sender Name:</strong>
+                <span id="senderName">-</span>
+            </div>
+            <div class="credential-box">
+                <strong>SMTP Server:</strong>
+                <span>smtp.elasticemail.com:587</span>
+            </div>
+            <div class="alert alert-info">
+                <strong>📝 Important:</strong> To use SMTP, you'll need to generate an SMTP password separately in your 
+                <a href="https://elasticemail.com/account#/settings/new/create-smtp" target="_blank" class="link">Elastic Email dashboard</a>.
+            </div>
+            <button class="btn" onclick="location.reload()">Done</button>
+        </div>
+        <div id="errorAlert" class="alert alert-error" style="display: none;">
+            <span id="errorMessage"></span>
+        </div>
+    </div>
+    <script>${getJavaScriptContent()}</script>
+</body>
+</html>`;
+
+function getJavaScriptContent(): string {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://qfyomvwcugkqlbskhzhu.supabase.co';
+
+    return `
+        const SUPABASE_URL = '${supabaseUrl}';
+        const CLIENT_ID = '5a214a56-3a13-46d5-a871-a0d62758f1b2';
+        const CLIENT_SECRET = 'pHWyAql2OauX4datYjRxuWDzD9XGRpD0BYYsmOen3tM';
+        const REDIRECT_URI = window.location.href.split('?')[0];
+
+        let currentStep = 1;
+        let apiKey = '';
+        let accountInfo = null;
+        let accessToken = null;
+
+        function generateRandomString(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            const array = new Uint8Array(length);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => chars[byte % chars.length]).join('');
+        }
+
+        async function generateCodeChallenge(codeVerifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(codeVerifier);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode(...new Uint8Array(hash)))
+                .replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.step-dot').forEach(el => el.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            document.querySelector('.step-dot[data-step="' + step + '"]').classList.add('active');
+            currentStep = step;
+        }
+
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            document.getElementById('errorMessage').textContent = message;
+            errorAlert.style.display = 'block';
+            setTimeout(() => errorAlert.style.display = 'none', 5000);
+        }
+
+        async function validateApiKey() {
+            apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) { showError('Please enter your Elastic Email API key'); return; }
+            goToStep(3);
+            document.getElementById('loadingMessage').textContent = 'Validating API key...';
+            try {
+                const response = await fetch('https://api.elasticemail.com/v4/account', {
+                    headers: { 'X-ElasticEmail-ApiKey': apiKey }
+                });
+                if (!response.ok) throw new Error('Invalid API key');
+                accountInfo = await response.json();
+                document.getElementById('accountEmail').textContent = accountInfo.email || accountInfo.Email;
+                document.getElementById('authInfo').style.display = 'block';
+                goToStep(2);
+            } catch (error) { goToStep(1); showError(error.message); }
+        }
+
+        async function startOAuthFlow() {
+            const codeVerifier = generateRandomString(64);
+            const codeChallenge = await generateCodeChallenge(codeVerifier);
+            const state = crypto.randomUUID();
+            sessionStorage.setItem('code_verifier', codeVerifier);
+            sessionStorage.setItem('oauth_state', state);
+            sessionStorage.setItem('elastic_email_api_key', apiKey);
+            sessionStorage.setItem('account_info', JSON.stringify(accountInfo));
+            const authUrl = new URL(SUPABASE_URL + '/functions/v1/oauth-authorize');
+            authUrl.searchParams.set('client_id', CLIENT_ID);
+            authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+            authUrl.searchParams.set('response_type', 'code');
+            authUrl.searchParams.set('state', state);
+            authUrl.searchParams.set('code_challenge', codeChallenge);
+            authUrl.searchParams.set('code_challenge_method', 'S256');
+            authUrl.searchParams.set('scope', 'smtp:write');
+            window.location.href = authUrl.toString();
+        }
+
+        async function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            if (!code) return;
+            const savedState = sessionStorage.getItem('oauth_state');
+            if (state !== savedState) { showError('Invalid state parameter'); return; }
+            goToStep(3);
+            document.getElementById('loadingMessage').textContent = 'Exchanging authorization code...';
+            try {
+                const codeVerifier = sessionStorage.getItem('code_verifier');
+                apiKey = sessionStorage.getItem('elastic_email_api_key');
+                accountInfo = JSON.parse(sessionStorage.getItem('account_info'));
+                const tokenResponse = await fetch(SUPABASE_URL + '/functions/v1/oauth-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        redirect_uri: REDIRECT_URI,
+                        client_id: CLIENT_ID,
+                        client_secret: CLIENT_SECRET,
+                        code_verifier: codeVerifier
+                    })
+                });
+                if (!tokenResponse.ok) {
+                    const error = await tokenResponse.json();
+                    throw new Error(error.error_description || 'Failed to exchange code');
+                }
+                const tokens = await tokenResponse.json();
+                accessToken = tokens.access_token;
+                document.getElementById('loadingMessage').textContent = 'Storing SMTP credentials...';
+                const storeResponse = await fetch(SUPABASE_URL + '/functions/v1/smtp-credentials-store', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + accessToken
+                    },
+                    body: JSON.stringify({
+                        elastic_email_api_key: apiKey,
+                        set_as_default: true,
+                        sender_name: accountInfo.email.split('@')[0]
+                    })
+                });
+                if (!storeResponse.ok) {
+                    const error = await storeResponse.json();
+                    throw new Error(error.error_description || 'Failed to store credentials');
+                }
+                const result = await storeResponse.json();
+                document.getElementById('senderEmail').textContent = result.default_sender.email;
+                document.getElementById('senderName').textContent = result.default_sender.name;
+                sessionStorage.clear();
+                window.history.replaceState({}, document.title, window.location.pathname);
+                goToStep(4);
+            } catch (error) {
+                goToStep(1);
+                showError(error.message);
+                sessionStorage.clear();
+            }
+        }
+        window.addEventListener('DOMContentLoaded', handleOAuthCallback);
+    `;
+}
+
+serve((req) => {
+    return new Response(HTML_CONTENT, {
+        headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+        },
+    });
+});

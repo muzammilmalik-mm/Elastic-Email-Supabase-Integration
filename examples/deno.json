@@ -1,0 +1,8 @@
+{
+    "tasks": {
+        "dev": "supabase functions serve"
+    },
+    "imports": {
+        "elastic-email-supabase": "npm:elastic-email-supabase@1.0.0"
+    }
+}
