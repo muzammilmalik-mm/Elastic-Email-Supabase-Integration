@@ -38,6 +38,9 @@ function extractEmailFromDomain(domainString: string): string {
 }
 
 export default function CallbackPage() {
+    // Get base path from environment (e.g., '/supabase' or '')
+    const basePath = import.meta.env.VITE_APP_BASE_PATH || '/supabase';
+
     const [status, setStatus] = useState<'loading' | 'select_project' | 'enter_api_key' | 'configuring' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Connecting to Supabase...');
     const [projects, setProjects] = useState<Project[]>([]);
@@ -93,7 +96,7 @@ export default function CallbackPage() {
 
             // Detect Elastic Email OAuth by path or sessionStorage flag
             const isElasticEmailOAuth =
-                currentPath === '/oauth2/callback' ||
+                currentPath.includes('/oauth2/callback') ||
                 sessionStorage.getItem('elastic_email_oauth_flow');
 
             if (isElasticEmailOAuth) {
@@ -169,7 +172,7 @@ export default function CallbackPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         code: code,
-                        redirect_uri: window.location.origin + '/oauth2/callback'
+                        redirect_uri: window.location.origin + basePath + '/oauth2/callback'
                     })
                 }
             );
@@ -199,7 +202,8 @@ export default function CallbackPage() {
             console.log('✅ Elastic Email OAuth successful');
 
             // Redirect to home page for Supabase login
-            window.location.href = '/';
+            window.location.href = basePath + '/';
+
 
         } catch (error) {
             console.error('Elastic Email OAuth error:', error);
@@ -579,9 +583,16 @@ export default function CallbackPage() {
                         4. Paste above
                     </div>
 
+                    {!elasticEmailAccessToken && (
+                        <div className="alert alert-error" style={{ marginBottom: '20px' }}>
+                            ⚠️ Please complete Elastic Email OAuth first to get access token
+                        </div>
+                    )}
+
                     <button
                         onClick={handleConfigureSMTP}
                         disabled={
+                            !elasticEmailAccessToken ||
                             !username ||
                             (emailOption === 'dropdown' ? !selectedDomain : (!emailPrefix || !customDomainSelection))
                         }

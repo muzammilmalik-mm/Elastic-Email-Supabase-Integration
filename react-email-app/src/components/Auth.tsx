@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import { FormInput } from './common/FormInput'
 import { Alert } from './common/Alert'
 import { SupabaseLogo } from './common/SupabaseLogo'
@@ -10,9 +11,24 @@ interface AuthProps {
 }
 
 export function Auth({ onAuthSuccess }: AuthProps) {
+    const navigate = useNavigate()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const { loading, error, signIn } = useAuth()
+
+    // Check if this is an Elastic Email OAuth callback arriving at root path
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get('code')
+        const state = urlParams.get('state')
+
+        // If we have code and state params, this is likely an OAuth callback
+        // Redirect to the proper callback handler
+        if (code && state) {
+            console.log('🔵 Detected OAuth callback at root, redirecting to /oauth2/callback')
+            navigate(`/oauth2/callback${window.location.search}`, { replace: true })
+        }
+    }, [navigate])
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
