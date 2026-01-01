@@ -122,7 +122,7 @@ function AppContent() {
 
 function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename="/supabase">
             <AppContent />
         </BrowserRouter>
     )
