@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const SUPABASE_OAUTH_CLIENT_ID = '493357a3-0356-449d-a187-bcb6019741c1';
 const SUPABASE_OAUTH_CLIENT_SECRET = Deno.env.get('OAUTH_CLIENT_SECRET')!;
-const REDIRECT_URI = 'http://localhost:5173/supabase/callback';
+const REDIRECT_URI = Deno.env.get('OAUTH_REDIRECT_URI');
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',

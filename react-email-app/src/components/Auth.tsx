@@ -26,11 +26,12 @@ export function Auth({ onAuthSuccess }: AuthProps) {
     }
 
     const handleSupabaseOAuth = () => {
+        const basePath = import.meta.env.VITE_APP_BASE_PATH || '/supabase'
         const params = new URLSearchParams({
             client_id: '493357a3-0356-449d-a187-bcb6019741c1',
             response_type: 'code',
             scope: 'all',
-            redirect_uri: `${window.location.origin}/supabase/callback`
+            redirect_uri: `${window.location.origin}${basePath}/callback`
         })
 
         window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`
