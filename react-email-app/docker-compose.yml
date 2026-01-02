@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  react-email-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: react-email-app
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    environment:
+      - NODE_ENV=production

@@ -3,7 +3,6 @@ import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { FormInput } from './common/FormInput'
 import { Alert } from './common/Alert'
-import { SupabaseLogo } from './common/SupabaseLogo'
 import './Auth.css'
 
 interface AuthProps {
